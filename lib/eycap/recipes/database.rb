@@ -26,6 +26,8 @@ Capistrano::Configuration.instance(:must_exist).load do
 
       if @environment_info['adapter'] == 'mysql'
         dbhost = @environment_info['host']
+        dbuser = @environment_info['username']
+        environment_database = @environment_info['database']
         dbhost = environment_dbhost.sub('-master', '') + '-replica' if dbhost != 'localhost' # added for Solo offering, which uses localhost
         run "mysqldump --add-drop-table -u #{dbuser} -h #{dbhost} -p #{environment_database} | bzip2 -c > #{backup_file}.bz2" do |ch, stream, out |
            ch.send_data "#{dbpass}\n" if out=~ /^Enter password:/
