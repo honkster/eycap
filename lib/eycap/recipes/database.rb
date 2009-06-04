@@ -1,6 +1,11 @@
 Capistrano::Configuration.instance(:must_exist).load do
 
   namespace :db do
+
+    def extract_database_dot_yml
+      run("cat #{shared_path}/config/database.yml") { |channel, stream, data| @environment_info = YAML.load(data)[rails_env] }
+    end
+
     task :backup_name, :roles => :db, :only => { :primary => true } do
       now = Time.now
       run "mkdir -p #{shared_path}/db_backups"
@@ -17,7 +22,7 @@ Capistrano::Configuration.instance(:must_exist).load do
 
       backup_name
       on_rollback { run "rm -f #{backup_file}" }
-      run("cat #{shared_path}/config/database.yml") { |channel, stream, data| @environment_info = YAML.load(data)[rails_env] }  
+      extract_database_dot_yml
 
       if @environment_info['adapter'] == 'mysql'
         dbhost = @environment_info['host']
@@ -42,7 +47,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     desc "Backup your MySQL or PostgreSQL database to shared_path+/db_backups"
     task :dump, :roles => :db, :only => {:primary => true} do
       backup_name
-      run("cat #{shared_path}/config/database.yml") { |channel, stream, data| @environment_info = YAML.load(data)[rails_env] }
+      extract_database_dot_yml
       if @environment_info['adapter'] == 'mysql'
         dbhost = @environment_info['host']
         dbhost = environment_dbhost.sub('-master', '') + '-replica' if dbhost != 'localhost' # added for Solo offering, which uses localhost
